@@ -1,0 +1,13 @@
+streamlit
+google-generativeai
+audio-recorder-streamlit
+streamlit_toggle
+streamlit-vertical-slider
+streamlit-lottie
+streamlit-float
+python-dotenv
+langchain
+langchain-groq
+langchain_community
+pypdf
+pdfplumber
