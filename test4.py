@@ -140,7 +140,7 @@ def messages_to_gemini(messages):
                             st.write("Huraaaa")
 
 
-                    except FailedPrecondition as e:
+                    except Exception as e:
                         st.error(f"An error occurred {e}")
                     os.remove(temp_file_path)
 
