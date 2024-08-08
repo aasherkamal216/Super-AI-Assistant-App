@@ -98,7 +98,7 @@ def base64_to_temp_file(base64_string, unique_name, file_extension):
     temp_file_path = f"{unique_name}.{file_extension}"
     with open(temp_file_path, "wb") as temp_file:
         temp_file.write(file_bytes.read())
-        time.sleep(1) 
+        time.sleep(10) 
     return temp_file_path
 
 
