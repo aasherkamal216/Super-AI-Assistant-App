@@ -5,7 +5,7 @@ from io import BytesIO
 import base64
 from streamlit_lottie import st_lottie
 import json
-from utils import set_safety_settings, about
+from utils import set_safety_settings, about, extract_all_pages_as_images
 import google.generativeai as genai
 from google.generativeai.types import SafetyRatingDict
 import os, random
@@ -66,6 +66,7 @@ async def generate_speech(text, voice):
         await communicate.save(temp_file.name)
         temp_file_path = temp_file.name
     return temp_file_path
+
 
 def get_audio_player(file_path):
     with open(file_path, "rb") as f:
@@ -133,14 +134,10 @@ def messages_to_gemini(messages):
                     os.remove(temp_file_path)
 
             elif content["type"] == "pdf_file":
-                file_name = content['unique_name']
-
-                if file_name not in uploaded_files:
-                    temp_file_path = base64_to_temp_file(content["pdf_file"], file_name, "pdf")
-
+                if content['pdf_file'].split(".")[0] not in uploaded_files:
                     with st.spinner("Sending your PDF to Gemini..."):
-                        gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
-                    os.remove(temp_file_path)
+                        gemini_message["parts"].append(genai.upload_file(path=content['pdf_file']))
+                    os.remove(content['pdf_file'])
 
 
             elif content["type"] == "speech_input":
@@ -166,11 +163,30 @@ def base64_to_image(base64_string):
     
     return Image.open(BytesIO(base64.b64decode(base64_string)))
 
+def add_pdf_file_to_messages():
+    if st.session_state.pdf_uploaded:
+        # Save the PDF file
+        pdf_id = random.randint(1000, 9999)
+        pdf_filename = f"pdf_{pdf_id}.pdf"
+        with open(pdf_filename, "wb") as f:
+            f.write(st.session_state.pdf_uploaded.read())
+        
+        # Add the PDF file to session_state messages
+        st.session_state.messages.append(
+            {
+                "role": "user", 
+                "content": [{
+                    "type": "pdf_file",
+                    "pdf_file": pdf_filename,
+                }]
+            }
+        )
+
+
 ##--- Function for adding media files to session_state messages ---###
 def add_media_files_to_messages():
     if st.session_state.uploaded_file:
         file_type = st.session_state.uploaded_file.type
-        st.write(file_type)
         file_content = st.session_state.uploaded_file.getvalue()
         
         if file_type.startswith("image"):
@@ -210,19 +226,6 @@ def add_media_files_to_messages():
                     }]
                 }
             )
-        elif file_type == "application/pdf":
-            pdf_base64 = base64.b64encode(file_content).decode()
-            unique_id = random.randint(1000, 9999)
-            st.session_state.messages.append(
-                {
-                    "role": "user", 
-                    "content": [{
-                        "type": "pdf_file",
-                        "pdf_file": f"data:{file_type};base64,{pdf_base64}",
-                        "unique_name": f"temp_{unique_id}"
-                    }]
-                }
-            )
 
 ###--- FUNCTION TO ADD CAMERA IMAGE TO MESSAGES ---##
 def add_camera_img_to_messages():
@@ -249,6 +252,9 @@ def reset_conversation():
     # Reset the uploaded files list
     if "uploaded_files" in st.session_state:
         st.session_state.pop("uploaded_files", None)
+
+    if "pdf_uploaded" in st.session_state:
+        st.session_state.pop("pdf_uploaded", None)
 
 ##--- FUNCTION TO STREAM LLM RESPONSE ---##
 def stream_llm_response(model_params, model_type="google", api_key=None):
@@ -332,7 +338,7 @@ else:
                 with st.popover("📁 Upload", use_container_width=True):
                     st.file_uploader(
                         "Upload an image, audio or a video", 
-                        type=["png", "jpg", "jpeg", "wav", "mp3", "mp4", "pdf"], 
+                        type=["png", "jpg", "jpeg", "wav", "mp3", "mp4"], 
                         accept_multiple_files=False,
                         key="uploaded_file",
                         on_change=add_media_files_to_messages,
@@ -347,13 +353,15 @@ else:
                             key="camera_img",
                             on_change=add_camera_img_to_messages,
                         )
-
+            st.divider()
+            tip = "If you upload a PDF, it will be sent to LLM."
+            pdf_upload = st.file_uploader("Upload a PDF", type="pdf", key="pdf_uploaded", on_change=add_pdf_file_to_messages, help=)
         ###---- Groq Models Sidebar Customization----###
         else:
             pass  # will add later
 
 ######-----  Main Interface -----#######
-    chat_col1, chat_col2 = st.columns([1,6])
+    chat_col1, chat_col2 = st.columns([1,3.5])
 
     with chat_col1:
         ###--- Audio Recording ---###
@@ -370,6 +378,16 @@ else:
                 on_click=reset_conversation,
                 help="If clicked, conversation will be reset.",
             )
+        
+        if pdf_upload:
+            pdf_pages = extract_all_pages_as_images(pdf_upload)
+            st.session_state["pdf_pages"] = pdf_pages
+            zoom_level = st.slider(label="",label_visibility="collapsed",
+                min_value=100, max_value=1000, value=400, step=100, key="zoom_level"
+            )
+            with st.container(height=200, border=True):
+                    for page_image in pdf_pages:
+                        st.image(page_image, width=zoom_level)
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -399,13 +417,18 @@ else:
 
         
     with chat_col2:
-        message_container = st.container(height=380, border=False)
+        message_container = st.container(height=400, border=False)
 
         for message in st.session_state.messages:
             avatar = "assistant.png" if message["role"] == "assistant" else "user.png"
-            if message['content'][0]['type']=="text" and message['content'][0]['text'] == "Please Answer what is asked in the audio.":
-                continue
-            else:
+            valid_content = [
+                content for content in message["content"]
+                if not (
+                    (content["type"] == "text" and content["text"] == "Please Answer what is asked in the audio.") or
+                    content["type"] == "pdf_file"
+                )
+            ]
+            if valid_content:
                 with message_container.chat_message(message["role"], avatar=avatar):
                     for content in message["content"]:
                         if content["type"] == "text":

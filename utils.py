@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_vertical_slider import vertical_slider
+import pdfplumber
 
 @st.dialog("Confirm Selection 👇", width="large")
 def visualize_display_page(selection_dict):
@@ -52,6 +53,15 @@ def temperature_slider():
         value_always_visible = False ,#Optional - Defaults to False
     )
     return temperature
+
+
+def extract_all_pages_as_images(file_upload):
+    pdf_pages = []
+    with pdfplumber.open(file_upload) as pdf:
+        pdf_pages = [page.to_image().original for page in pdf.pages]
+
+    return pdf_pages
+
 
 def set_safety_settings():
     safety_settings = [
