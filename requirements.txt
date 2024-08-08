@@ -11,3 +11,4 @@ langchain-groq
 langchain_community
 pypdf
 pdfplumber
+edge-tts
