@@ -133,7 +133,7 @@ def messages_to_gemini(messages):
                     try:
                         with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
                             file = genai.upload_file(path=temp_file_path)
-                            while video_file.state.name == "PROCESSING":
+                            while file.state.name == "PROCESSING":
                                 st.write('##----*---##')
                                 time.sleep(10)
                             gemini_message["parts"].append(file)
