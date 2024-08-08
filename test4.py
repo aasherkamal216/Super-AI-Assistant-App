@@ -354,7 +354,7 @@ else:
                         )
             st.divider()
             tip = "If you upload a PDF, it will be sent to LLM."
-            pdf_upload = st.file_uploader("Upload a PDF", type="pdf", key="pdf_uploaded", on_change=add_pdf_file_to_messages, help=)
+            pdf_upload = st.file_uploader("Upload a PDF", type="pdf", key="pdf_uploaded", on_change=add_pdf_file_to_messages, help=tip)
         ###---- Groq Models Sidebar Customization----###
         else:
             pass  # will add later
