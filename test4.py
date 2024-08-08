@@ -7,7 +7,7 @@ from streamlit_lottie import st_lottie
 import json
 from utils import set_safety_settings, about, extract_all_pages_as_images
 import google.generativeai as genai
-import os, random
+import os, random, time
 import tempfile
 import asyncio
 import edge_tts
@@ -98,6 +98,7 @@ def base64_to_temp_file(base64_string, unique_name, file_extension):
     temp_file_path = f"{unique_name}.{file_extension}"
     with open(temp_file_path, "wb") as temp_file:
         temp_file.write(file_bytes.read())
+        time.sleep(1) 
     return temp_file_path
 
 
@@ -127,10 +128,12 @@ def messages_to_gemini(messages):
 
                 if file_name not in uploaded_files:
                     temp_file_path = base64_to_temp_file(content[content["type"]], file_name, "mp4" if content["type"] == "video_file" else "wav")
-
-                    with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
-                        gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
-                    os.remove(temp_file_path)
+                    try:
+                        with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
+                            gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
+                        os.remove(temp_file_path)
+                    except FailedPrecondition as e:
+                        st.error(f"An error occurred: {e}")
 
             elif content["type"] == "pdf_file":
                 if content['pdf_file'].split(".")[0] not in uploaded_files:
