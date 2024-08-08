@@ -7,7 +7,6 @@ from streamlit_lottie import st_lottie
 import json
 from utils import set_safety_settings, about, extract_all_pages_as_images
 import google.generativeai as genai
-from google.generativeai.types import SafetyRatingDict
 import os, random
 import tempfile
 import asyncio
@@ -293,11 +292,11 @@ with st.sidebar:
     api_cols = st.columns(2)
     with api_cols[0]:
         with st.popover("🔐 Groq", use_container_width=True):
-            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key", value=os.getenv("GROQ_API_KEY") , type="password")
+            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key", type="password")
     
     with api_cols[1]:
         with st.popover("🔐 Google", use_container_width=True):
-            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", value=os.getenv("GOOGLE_API_KEY") , type="password")
+            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", type="password")
  
 ##--- API KEY CHECK ---##
 if (groq_api_key == "" or groq_api_key is None or "gsk" not in groq_api_key) and (google_api_key == "" or google_api_key is None or "AIza" not in google_api_key):
