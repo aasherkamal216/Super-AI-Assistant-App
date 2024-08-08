@@ -128,12 +128,20 @@ def messages_to_gemini(messages):
 
                 if file_name not in uploaded_files:
                     temp_file_path = base64_to_temp_file(content[content["type"]], file_name, "mp4" if content["type"] == "video_file" else "wav")
-                    try:
-                        with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
-                            gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
-                        os.remove(temp_file_path)
-                    except FailedPrecondition as e:
-                        st.error(f"An error occurred: {e}")
+                    for attempt in range(3):
+                        try:
+                            with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
+                                gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
+                            break 
+
+                        except FailedPrecondition as e:
+                            if attempt < max_retries - 1:
+                                st.warning("Retrying file upload...")
+                                time.sleep(1)  # Brief delay before retrying
+                            else:
+                                st.error("Failed to upload file after several attempts.")
+                                raise e
+                    os.remove(temp_file_path)
 
             elif content["type"] == "pdf_file":
                 if content['pdf_file'].split(".")[0] not in uploaded_files:
