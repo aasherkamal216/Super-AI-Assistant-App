@@ -98,7 +98,7 @@ def base64_to_temp_file(base64_string, unique_name, file_extension):
     temp_file_path = f"{unique_name}.{file_extension}"
     with open(temp_file_path, "wb") as temp_file:
         temp_file.write(file_bytes.read())
-        time.sleep(10) 
+        time.sleep(1) 
     return temp_file_path
 
 
@@ -133,6 +133,7 @@ def messages_to_gemini(messages):
                         try:
                             with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
                                 gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
+                                st.write("Huraaaa")
                             break 
 
                         except FailedPrecondition as e:
