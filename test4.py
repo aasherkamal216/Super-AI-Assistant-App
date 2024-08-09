@@ -123,26 +123,23 @@ def messages_to_gemini(messages):
             elif content["type"] == "image_url":
                 gemini_message["parts"].append(base64_to_image(content["image_url"]["url"]))
 
-            elif content["type"] in ["video_file", "audio_file"]:
+            elif content["type"] == "video_file":
+                file_path = content["video_file"]
+                if file_path.split(".")[0] not in uploaded_files:
+                    with st.spinner(f"Sending video to Gemini..."):
+                        try:
+                            file = genai.upload_file(path=file_path)
+                            gemini_message["parts"].append(file)
+                        except Exception as e:
+                            st.error(f"An error occurred {e}")
+
+            elif content["type"] == "audio_file":
                 file_name = content['unique_name']
 
                 if file_name not in uploaded_files:
-                    temp_file_path = base64_to_temp_file(content[content["type"]], file_name, "mp4" if content["type"] == "video_file" else "wav")
-                    st.write(temp_file_path)
-
-                    try:
-                        with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
-                            file = genai.upload_file(path=temp_file_path)
-                            while file.state.name == "PROCESSING":
-                                st.write('##----*---##')
-                                time.sleep(10)
-                                file = genai.get_file(file.name)
-                            gemini_message["parts"].append(file)
-                            st.write("Hurraaaa")
-
-
-                    except Exception as e:
-                        st.error(f"An error occurred {e}")
+                    temp_file_path = base64_to_temp_file(content["audio_file"], file_name, "wav")
+                    with st.spinner(f"Sending audio file to Gemini..."):
+                        gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
                     os.remove(temp_file_path)
 
             elif content["type"] == "pdf_file":
@@ -194,7 +191,10 @@ def add_pdf_file_to_messages():
             }
         )
 
-
+def save_uploaded_video(video_file, file_path):
+    with open(file_path, "wb") as f:
+        f.write(video_file.read())
+        
 ##--- Function for adding media files to session_state messages ---###
 def add_media_files_to_messages():
     if st.session_state.uploaded_file:
@@ -213,15 +213,17 @@ def add_media_files_to_messages():
                 }
             )
         elif file_type == "video/mp4":
-            video_base64 = base64.b64encode(file_content).decode()
-            unique_id = random.randint(1000, 9999)
+            file_name = st.session_state.uploaded_file.name
+            file_path = os.path.join(tempfile.gettempdir(), file_name)
+            save_uploaded_video(st.session_state.uploaded_file, file_path)
+
             st.session_state.messages.append(
                 {
                     "role": "user", 
                     "content": [{
                         "type": "video_file",
-                        "video_file": f"data:{file_type};base64,{video_base64}",
-                        "unique_name": f"temp_{unique_id}"
+                        "video_file": file_path,
+                        "unique_name": file_name
                     }]
                 }
             )
