@@ -136,8 +136,9 @@ def messages_to_gemini(messages):
                             while file.state.name == "PROCESSING":
                                 st.write('##----*---##')
                                 time.sleep(10)
+                                file = genai.get_file(file.name)
                             gemini_message["parts"].append(file)
-                            st.write("Huraaaa")
+                            st.write("Hurraaaa")
 
 
                     except Exception as e:
