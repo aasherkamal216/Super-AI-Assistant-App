@@ -59,7 +59,7 @@ def load_lottie_file(filepath: str):
     with open(filepath, "r") as f:
         return json.load(f)
 
-
+###--- GENERATE SPEECH---###
 async def generate_speech(text, voice):
     communicate = edge_tts.Communicate(text, voice)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
