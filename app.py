@@ -13,8 +13,6 @@ import os, random, validators
 import tempfile
 import asyncio
 import edge_tts
-from dotenv import load_dotenv
-load_dotenv()
 
 st.set_page_config(
     page_title="Super GPT",
@@ -280,7 +278,7 @@ def add_camera_img_to_messages():
 def reset_conversation():
     if "messages" in st.session_state and len(st.session_state.messages) > 0:
         st.session_state.pop("messages", None)
-    if "groq_chat_history" in st.session_state and len(st.session_state.groq_chat_history) > 1:
+    if "groq_chat_history" in st.session_state and len(st.session_state.groq_chat_history) > 0:
         st.session_state.pop("groq_chat_history", None)
 
     for file in genai.list_files():
@@ -325,17 +323,18 @@ def stream_gemini_response(model_params, api_key):
 
 if "summarize" not in st.session_state:
     st.session_state.summarize = False
+    
 ##--- API KEYS ---##
 with st.sidebar:
     st.logo("logo.png")
     api_cols = st.columns(2)
     with api_cols[0]:
         with st.popover("🔐 Groq", use_container_width=True):
-            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key", value=os.getenv("GROQ_API_KEY") , type="password")
+            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key" , type="password")
     
     with api_cols[1]:
         with st.popover("🔐 Google", use_container_width=True):
-            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", value=os.getenv("GOOGLE_API_KEY") , type="password")
+            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", type="password")
  
 ##--- API KEY CHECK ---##
 if (groq_api_key == "" or groq_api_key is None or "gsk" not in groq_api_key) and (google_api_key == "" or google_api_key is None or "AIza" not in google_api_key):
@@ -415,11 +414,11 @@ else:
     with chat_col1:
         ###--- Audio Recording ---###
         audio_bytes = audio_recorder("Speak",
-                                     pause_threshold=3,
+                                     pause_threshold=5,
                                      neutral_color="#f5f8fc",
                                      recording_color="#f81f6f",
                                      icon_name="microphone-lines",
-                                     icon_size="3x")
+                                     icon_size="3x", key="speech")
 
         ###--- Reset Conversation ---###
         st.button(
@@ -451,19 +450,20 @@ else:
 
     if audio_bytes and st.session_state.prev_speech_hash != hash(audio_bytes):
         st.session_state.prev_speech_hash = hash(audio_bytes)
-        speech_base64 = base64.b64encode(audio_bytes).decode()
-        unique_id = random.randint(1000, 9999)
-
-        st.session_state.messages.append(
-            {
-                "role": "user",
-                "content": [{
-                    "type": "speech_input",
-                    "speech_input": f"data:audio/wav;base64,{speech_base64}",
-                    "unique_name": f"temp_{unique_id}"
-                }]
-            }
-        )
+        if model_type == "google":
+            speech_base64 = base64.b64encode(audio_bytes).decode()
+            unique_id = random.randint(1000, 9999)
+    
+            st.session_state.messages.append(
+                {
+                    "role": "user",
+                    "content": [{
+                        "type": "speech_input",
+                        "speech_input": f"data:audio/wav;base64,{speech_base64}",
+                        "unique_name": f"temp_{unique_id}"
+                    }]
+                }
+            )
         speech_file_added = True
 
         
