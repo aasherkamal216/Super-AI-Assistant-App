@@ -7,3 +7,4 @@ font="sans serif"
 
 [server]
 runOnSave = true
+maxUploadSize = 10

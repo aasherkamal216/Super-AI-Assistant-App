@@ -2,6 +2,8 @@ import streamlit as st
 from streamlit_vertical_slider import vertical_slider
 import pdfplumber
 from langchain_core.prompts import ChatPromptTemplate
+import speech_recognition as sr
+import tempfile
 
 @st.dialog("Confirm Selection 👇", width="large")
 def visualize_display_page(selection_dict):
@@ -85,3 +87,20 @@ def set_safety_settings():
 ]
 
     return safety_settings
+
+def speech_to_text(audio_bytes):
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as recording:
+        recording.write(audio_bytes)
+        temp_file_path = recording.name
+        
+    r = sr.Recognizer()
+    with sr.AudioFile(temp_file_path) as source:
+        recorded_voice = r.record(source)
+
+        try:
+            text = r.recognize_google(recorded_voice, language="en")
+            return text
+        except sr.UnknownValueError as e:
+            st.error(e)
+        except sr.RequestError as e:
+            print("could not request result from google speech recognition service: {0}".format(e))

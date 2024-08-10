@@ -80,25 +80,29 @@ def create_groq_agent(model_params, api_key, tools, question, chat_history):
     return response['output']
 
 
-def get_tools():
-    wikipedia = WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=500)
-    wikipedia_tool = Tool(name="Wikipedia",
-                        func=wikipedia.run,
-                        description="A useful tool for searching the Internet to find information on world events, issues, dates, years, etc.")
-    arxiv = ArxivAPIWrapper(top_k_results=2, doc_content_chars_max=500)
-    arxiv_tool = Tool(name="ArXiv",
-                      func=arxiv.run,
-                      description="A useful tool for searching scientific and research papers."
+def get_tools(selected_tools):
+    # Define all available tools
+    tools = {
+        "Wikipedia": Tool(
+            name="Wikipedia",
+            func=WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=500).run,
+            description="A useful tool for searching the Internet to find information on world events, issues, dates, years, etc."
+        ),
+        "ArXiv": Tool(
+            name="ArXiv",
+            func=ArxivAPIWrapper(top_k_results=2, doc_content_chars_max=500).run,
+            description="A useful tool for searching scientific and research papers."
+        ),
+        "DuckDuckGo Search": Tool(
+            name="DuckDuckGo Search",
+            func=DuckDuckGoSearchRun().run,
+            description="Useful for when you need to search the internet to find latest information, facts and figures that another tool can't find."
+        )
+    }
 
-    )
-    search = DuckDuckGoSearchRun()
-    search_tool = Tool(
-        name="DuckDuckGo Search",
-        func=search.run,
-        description="Useful for when you need to search the internet to find latest information, facts and figures that another tool can't find.",
-    )
+    # Filter and return only the tools selected by the user
+    return [tools[tool_name] for tool_name in selected_tools]
 
-    return [arxiv_tool, wikipedia_tool, search_tool]
 
 def summarizer_model(model_params, api_key, url):
     llm = ChatGroq(model=model_params['model'], api_key=api_key,
