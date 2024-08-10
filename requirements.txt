@@ -19,4 +19,4 @@ validators
 python-docx==1.1.2
 SpeechRecognition
 youtube-transcript-api
-pytube
+pytube==15.0.0
