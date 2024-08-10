@@ -524,36 +524,38 @@ else:
     ###------- GROQ MODELS --------###
             if model_type == "groq":
 
-                if not speech_file_added:
-                    message_container.chat_message("user", avatar="user.png").markdown(prompt)
-                    st.session_state.groq_chat_history.append({"role": "user", "content": prompt})
+                if speech_file_added:
+                    question = speech_to_text(audio_bytes)
                 else:
-                    speech_to_text = convert_speech_to_text(audio_bytes)
-                    message_container.chat_message("user", avatar="user.png").markdown(speech_to_text)
-                    st.session_state.groq_chat_history.append({"role": "user", "content": speech_to_text})
+                    question = prompt
+
+                if question is not None:
+                    message_container.chat_message("user", avatar="user.png").markdown(question)
+                    st.session_state.groq_chat_history.append({"role": "user", "content": question})
+
+                    with message_container.chat_message("assistant", avatar="assistant.png"):
                     
-                with message_container.chat_message("assistant", avatar="assistant.png"):
-                
-                    try:
-                        if groq_llm_type == "Chatbot":
-                            final_response = st.write_stream(groq_chatbot(model_params=model_params, api_key=groq_api_key,
-                                        question=prompt if prompt else speech_to_text, chat_history=st.session_state.groq_chat_history))
+                        try:
+                            if groq_llm_type == "Chatbot":
+                                final_response = st.write_stream(groq_chatbot(model_params=model_params, api_key=groq_api_key,
+                                            question=question, chat_history=st.session_state.groq_chat_history))
 
-                        elif groq_llm_type == "Agent":
-                            final_response = create_groq_agent(model_params=model_params, api_key=groq_api_key,
-                                                                            question=prompt if prompt else speech_to_text,
-                                                                            tools=get_tools(tools),
-                                                                            chat_history=st.session_state.groq_chat_history,)
-                            
-                            st.markdown(final_response)
-                        st.session_state.groq_chat_history.append({"role": "assistant", "content": final_response})
+                            elif groq_llm_type == "Agent":
+                                final_response = create_groq_agent(model_params=model_params, api_key=groq_api_key,
+                                                                                question=question,
+                                                                                tools=get_tools(tools),
+                                                                                chat_history=st.session_state.groq_chat_history,)
+                                
+                                st.markdown(final_response)
+                            st.session_state.groq_chat_history.append({"role": "assistant", "content": final_response})
 
-                        if "voice_response" in st.session_state and st.session_state.voice_response:
-                            response_voice = st.session_state.voice_response
-                            generate_voice(final_response, voices[response_voice])
+                            if "voice_response" in st.session_state and st.session_state.voice_response:
+                                response_voice = st.session_state.voice_response
+                                generate_voice(final_response, voices[response_voice])
 
-                    except Exception as e:
-                        st.error(f"An error occurred: {e}", icon="❌")
+                        except Exception as e:
+                            st.error(f"An error occurred: {e}", icon="❌")
+            
             
     ###-------- GEMINI MODELS -------###
             else:
