@@ -12,3 +12,8 @@ langchain_community
 pypdf
 pdfplumber
 edge-tts
+arxiv
+wikipedia
+duckduckgo-search
+langchainhub
+validators

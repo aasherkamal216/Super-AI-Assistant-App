@@ -1,5 +1,8 @@
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
+from groq_models import create_groq_agent, groq_chatbot, get_tools, summarizer_model
+from langchain_community.document_loaders import Docx2txtLoader
+from langchain_community.document_loaders import TextLoader
 from PIL import Image
 from io import BytesIO
 import base64
@@ -7,8 +10,7 @@ from streamlit_lottie import st_lottie
 import json
 from utils import set_safety_settings, about, extract_all_pages_as_images
 import google.generativeai as genai
-from google.generativeai.types import SafetyRatingDict
-import os, random
+import os, random, validators
 import tempfile
 import asyncio
 import edge_tts
@@ -27,7 +29,7 @@ st.set_page_config(
 st.markdown("""
     <h1 style='text-align: center;'>
         <span style='color: #F81F6F;'>Super</span> 
-        <span style='color: #f5f8fc;'>GPT Assistant</span>
+        <span style='color: #f5f8fc;'>AI Assistant</span>
     </h1>
 """, unsafe_allow_html=True)
 
@@ -53,6 +55,10 @@ voices = {
     "US Guy":"en-US-GuyNeural",
     "Sawara":"hi-IN-SwaraNeural",
 }
+
+
+def speech_recoginition():
+    pass
 
 @st.cache_data
 def load_lottie_file(filepath: str):
@@ -122,8 +128,14 @@ def messages_to_gemini(messages):
 
             elif content["type"] == "image_url":
                 gemini_message["parts"].append(base64_to_image(content["image_url"]["url"]))
+            
+            # elif content["type"] == "video_file":
+            #     file_path = content["video_file"]
+            #     if file_path.split(".")[0] not in uploaded_files:
+            #         with st.spinner(f"Sending video to Gemini..."):
+            #             gemini_message["parts"].append(genai.upload_file(path=file_path))
 
-            elif content["type"] in ["video_file", "audio_file"]:
+            elif content["type"] in ["video_file", "audio_file", "speech_input"]:
                 file_name = content['unique_name']
 
                 if file_name not in uploaded_files:
@@ -138,16 +150,6 @@ def messages_to_gemini(messages):
                     with st.spinner("Sending your PDF to Gemini..."):
                         gemini_message["parts"].append(genai.upload_file(path=content['pdf_file']))
                     os.remove(content['pdf_file'])
-
-
-            elif content["type"] == "speech_input":
-                file_name = content['unique_name']
-                if file_name not in uploaded_files:
-                    temp_file_path = base64_to_temp_file(content["speech_input"], file_name, "wav")
-
-                    with st.spinner("Sending your speech to Gemini..."):
-                        gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
-                    os.remove(temp_file_path)
 
         if prev_role != message["role"]:
             gemini_messages.append(gemini_message)
@@ -182,6 +184,9 @@ def add_pdf_file_to_messages():
             }
         )
 
+def save_uploaded_video(video_file, file_path):
+    with open(file_path, "wb") as f:
+        f.write(video_file.read())
 
 ##--- Function for adding media files to session_state messages ---###
 def add_media_files_to_messages():
@@ -203,6 +208,10 @@ def add_media_files_to_messages():
         elif file_type == "video/mp4":
             video_base64 = base64.b64encode(file_content).decode()
             unique_id = random.randint(1000, 9999)
+            # file_name = st.session_state.uploaded_file.name
+            # file_path = os.path.join(tempfile.gettempdir(), file_name)
+            # save_uploaded_video(st.session_state.uploaded_file, file_path)
+
             st.session_state.messages.append(
                 {
                     "role": "user", 
@@ -245,6 +254,8 @@ def add_camera_img_to_messages():
 def reset_conversation():
     if "messages" in st.session_state and len(st.session_state.messages) > 0:
         st.session_state.pop("messages", None)
+    if "groq_chat_history" in st.session_state and len(st.session_state.groq_chat_history) > 1:
+        st.session_state.pop("groq_chat_history", None)
 
     for file in genai.list_files():
         genai.delete_file(file.name)
@@ -256,26 +267,26 @@ def reset_conversation():
     if "pdf_uploaded" in st.session_state:
         st.session_state.pop("pdf_uploaded", None)
 
-##--- FUNCTION TO STREAM LLM RESPONSE ---##
-def stream_llm_response(model_params, model_type="google", api_key=None):
+##--- FUNCTION TO STREAM GEMINI RESPONSE ---##
+def stream_gemini_response(model_params, api_key):
     response_message = ""
-    if model_type == "google": 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(
-                model_name = model_params["model"],
-                generation_config={
-                    "temperature": model_params["temperature"],
-                    "max_output_tokens": model_params["max_tokens"],
-                },
-                safety_settings=set_safety_settings(),
-                system_instruction="""You are a helpful assistant who asnwers user's questions professionally and politely."""
-            )
-        gemini_messages = messages_to_gemini(st.session_state.messages)
 
-        for chunk in model.generate_content(contents=gemini_messages, stream=True):
-            chunk_text = chunk.text or ""
-            response_message += chunk_text
-            yield chunk_text
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+            model_name = model_params["model"],
+            generation_config={
+                "temperature": model_params["temperature"],
+                "max_output_tokens": model_params["max_tokens"],
+            },
+            safety_settings=set_safety_settings(),
+            system_instruction="""You are a helpful assistant who asnwers user's questions professionally and politely."""
+        )
+    gemini_messages = messages_to_gemini(st.session_state.messages)
+
+    for chunk in model.generate_content(contents=gemini_messages, stream=True):
+        chunk_text = chunk.text or ""
+        response_message += chunk_text
+        yield chunk_text
 
     st.session_state.messages.append({
     "role": "assistant", 
@@ -286,7 +297,8 @@ def stream_llm_response(model_params, model_type="google", api_key=None):
         }
     ]})
 
-
+if "summarize" not in st.session_state:
+    st.session_state.summarize = False
 ##--- API KEYS ---##
 with st.sidebar:
     st.logo("logo.png")
@@ -316,7 +328,7 @@ else:
 
         with columns[1]:
             if st.toggle("Voice Response"):
-                response_lang = st.selectbox("Available Voices:", options=voices.keys(), key="voice_response")
+                response_voice = st.selectbox("Available Voices:", options=voices.keys(), key="voice_response")
     
         available_models = [] + (google_models if google_api_key else []) + (groq_models if groq_api_key else [])
         model, model_type, temperature, max_tokens = get_llm_info(available_models)
@@ -358,7 +370,13 @@ else:
             pdf_upload = st.file_uploader("Upload a PDF", type="pdf", key="pdf_uploaded", on_change=add_pdf_file_to_messages, help=tip)
         ###---- Groq Models Sidebar Customization----###
         else:
-            pass  # will add later
+            groq_llm_type = st.radio(label="Select the LLM type:", key="groq_llm_type",options=["Agent", "Chatbot", "Summarizer"], horizontal=True)
+            if groq_llm_type == "Summarizer":
+                url = st.text_input("Enter YT video or Webpage URL:", key="url_to_summarize",
+                                    help="Only Youtube videos having captions can be summarized.")
+                
+                summarize_button = st.button("Summarize", type="primary", use_container_width=True, key="summarize")
+
 
 ######-----  Main Interface -----#######
     chat_col1, chat_col2 = st.columns([1,3.5])
@@ -378,9 +396,11 @@ else:
                 on_click=reset_conversation,
                 help="If clicked, conversation will be reset.",
             )
-        
-        if pdf_upload:
-            pdf_pages = extract_all_pages_as_images(pdf_upload)
+        if "pdf_uploaded" not in st.session_state:
+            st.session_state.pdf_uploaded = None
+
+        if st.session_state.pdf_uploaded:
+            pdf_pages = extract_all_pages_as_images(st.session_state.pdf_uploaded)
             st.session_state["pdf_pages"] = pdf_pages
             zoom_level = st.slider(label="",label_visibility="collapsed",
                 min_value=100, max_value=1000, value=400, step=100, key="zoom_level"
@@ -393,6 +413,8 @@ else:
         st.session_state.messages = []
     if "uploaded_files" not in st.session_state:
         st.session_state.uploaded_files = []
+    if "groq_chat_history" not in st.session_state:
+        st.session_state.groq_chat_history = []
 
     # Handle speech input
     speech_file_added = False
@@ -442,49 +464,102 @@ else:
                         elif content["type"] == "speech_input":
                             st.audio(content["speech_input"])
 
+        for msg in st.session_state.groq_chat_history:
+            avatar = "assistant.png" if msg["role"] == "assistant" else "user.png"
+            with message_container.chat_message(msg["role"], avatar=avatar):
+                st.markdown(msg['content'])
+
 
     ###----- User Question -----###
-    if prompt:= st.chat_input("Type you question", key="question") or speech_file_added:
-        if not speech_file_added:
-            message_container.chat_message("user", avatar="user.png").markdown(prompt)
+    if prompt:= st.chat_input("Type you question", key="question") or speech_file_added or st.session_state.summarize:
+        if model_type == "groq":
 
-            st.session_state.messages.append(
-                        {
-                            "role": "user", 
-                            "content": [{
-                                "type": "text",
-                                "text": prompt,
-                            }]
-                        }
-                    )
+            if not speech_file_added and not st.session_state.summarize:
+                message_container.chat_message("user", avatar="user.png").markdown(prompt)
+                st.session_state.groq_chat_history.append({"role": "user", "content": prompt})
+            elif speech_file_added:
+                speech_to_text = speech_recoginition()
+                st.session_state.groq_chat_history.append({"role": "user", "content": speech_to_text})
+                
+            with message_container.chat_message("assistant", avatar="assistant.png"):
+            
+                try:
+                    if groq_llm_type == "Chatbot":
+                        final_response = st.write_stream(groq_chatbot(model_params=model_params, api_key=groq_api_key,
+                                    question=prompt, chat_history=st.session_state.groq_chat_history))
+
+                    elif groq_llm_type == "Agent":
+                        final_response = create_groq_agent(model_params=model_params, api_key=groq_api_key,
+                                                                        question=prompt,
+                                                                        tools=get_tools(),
+                                                                        chat_history=st.session_state.groq_chat_history,)
+                        
+                        st.markdown(final_response)
+
+                    elif groq_llm_type == "Summarizer":
+                        if not url.strip():
+                            st.error("Please enter a URL")
+                        elif not validators.url(url):
+                            st.error("Please enter a valid URL")
+                        else:
+                            with st.spinner("Summarizing..."):
+                                final_response = summarizer_model(model_params=model_params, api_key=groq_api_key, url=url)
+                            st.markdown(final_response)
+                            
+                    st.session_state.groq_chat_history.append({"role": "assistant", "content": final_response})
+
+                    if "voice_response" in st.session_state and st.session_state.voice_response:
+                        response_voice = st.session_state.voice_response
+                        text_to_speak = (final_response).translate(str.maketrans('', '', '#-*_😊👋😄😁🥳👍🤩😂😎')) # Removing special chars and emojis
+                        with st.spinner("Generating voice response..."):
+                            temp_file_path = asyncio.run(generate_speech(text_to_speak, voices[response_voice])) 
+                            audio_player_html = get_audio_player(temp_file_path)  # Create an audio player
+                            st.markdown(audio_player_html, unsafe_allow_html=True)
+                            os.unlink(temp_file_path)  # Clean up the temporary audio file
+
+                except Exception as e:
+                    st.error(f"An error occurred: {e}", icon="❌")
+        
         else:
-            st.session_state.messages.append(
-                        {
-                            "role": "user", 
-                            "content": [{
-                                "type": "text",
-                                "text": "Please Answer the Question asked in the audio.",
-                            }]
-                        }
-                    )
+            if not speech_file_added:
+                message_container.chat_message("user", avatar="user.png").markdown(prompt)
 
-        ###----- Generate response -----###
-        with message_container.chat_message("assistant", avatar="assistant.png"):
-            try:
-                final_response = st.write_stream(stream_llm_response(
-                                model_params=model_params, 
-                                model_type=model_type, 
-                                api_key= google_api_key if model_type == "google" else groq_api_key
-                            )
+                st.session_state.messages.append(
+                            {
+                                "role": "user", 
+                                "content": [{
+                                    "type": "text",
+                                    "text": prompt,
+                                }]
+                            }
                         )
-                if "voice_response" in st.session_state and st.session_state.voice_response:
-                    response_lang = st.session_state.voice_response
-                    text_to_speak = (final_response).translate(str.maketrans('', '', '#-*_😊👋😄😁🥳👍🤩😂😎')) # Removing special chars and emojis
-                    with st.spinner("Generating voice response..."):
-                        temp_file_path = asyncio.run(generate_speech(text_to_speak, voices[response_lang])) 
-                        audio_player_html = get_audio_player(temp_file_path)  # Create an audio player
-                        st.markdown(audio_player_html, unsafe_allow_html=True)
-                        os.unlink(temp_file_path)  # Clean up the temporary audio file
+        ###----Google Gemini Response----###
+            else:
+                st.session_state.messages.append(
+                            {
+                                "role": "user", 
+                                "content": [{
+                                    "type": "text",
+                                    "text": "Please Answer the Question asked in the audio.",
+                                }]
+                            }
+                        )
 
-            except genai.types.generation_types.BlockedPromptException as e:
-                st.error(f"An error occurred: {e}", icon="❌")
+            ###----- Generate response -----###
+            with message_container.chat_message("assistant", avatar="assistant.png"):
+                try:
+                    final_response = st.write_stream(stream_gemini_response(model_params=model_params, api_key= google_api_key))
+
+                    if "voice_response" in st.session_state and st.session_state.voice_response:
+                        response_voice = st.session_state.voice_response
+                        text_to_speak = (final_response).translate(str.maketrans('', '', '#-*_😊👋😄😁🥳👍🤩😂😎')) # Removing special chars and emojis
+                        with st.spinner("Generating voice response..."):
+                            temp_file_path = asyncio.run(generate_speech(text_to_speak, voices[response_voice])) 
+                            audio_player_html = get_audio_player(temp_file_path)  # Create an audio player
+                            st.markdown(audio_player_html, unsafe_allow_html=True)
+                            os.unlink(temp_file_path)  # Clean up the temporary audio file
+    
+                except Exception as e:
+                    st.error(f"An error occurred: {e}", icon="❌")
+
+            

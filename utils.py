@@ -1,6 +1,7 @@
 import streamlit as st
 from streamlit_vertical_slider import vertical_slider
 import pdfplumber
+from langchain_core.prompts import ChatPromptTemplate
 
 @st.dialog("Confirm Selection 👇", width="large")
 def visualize_display_page(selection_dict):
