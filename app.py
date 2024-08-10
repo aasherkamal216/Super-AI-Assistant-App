@@ -144,7 +144,7 @@ def messages_to_gemini(messages):
 
                     with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
                         file = genai.upload_file(path=temp_file_path)
-                        gemini_message["parts"].append()
+                        
                         while file.state.name == "PROCESSING":
                             st.write('.')
                             time.sleep(10)
@@ -154,6 +154,7 @@ def messages_to_gemini(messages):
                             raise ValueError(file.state.name)
                             
                         file = genai.get_file(name=file.name)
+                        gemini_message["parts"].append(file)
                         st.write(f"Retrieved file '{file.display_name}' as: {file.uri}")
                     os.remove(temp_file_path)
 
