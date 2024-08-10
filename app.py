@@ -403,8 +403,8 @@ else:
                             on_change=add_camera_img_to_messages,
                         )
             st.divider()
-            tip = "If you upload a PDF, it will be sent to LLM."
-            pdf_upload = st.file_uploader("Upload a PDF", type=["pdf", "docx"], key="pdf_docx_uploaded", on_change=add_pdf_docx_file_to_messages, help=tip)
+            tip = "If you upload a PDF or Docx file, it will be sent to LLM."
+            pdf_upload = st.file_uploader("Upload a PDF or Docx file", type=["pdf", "docx"], key="pdf_docx_uploaded", on_change=add_pdf_docx_file_to_messages, help=tip)
         
         ###---- Groq Models Sidebar Customization----###
         else:
