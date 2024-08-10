@@ -7,8 +7,7 @@ from streamlit_lottie import st_lottie
 import json
 from utils import set_safety_settings, about, extract_all_pages_as_images
 import google.generativeai as genai
-from google.generativeai.types import SafetyRatingDict
-import os, random
+import os, random, time
 import tempfile
 import asyncio
 import edge_tts
@@ -99,6 +98,7 @@ def base64_to_temp_file(base64_string, unique_name, file_extension):
     temp_file_path = f"{unique_name}.{file_extension}"
     with open(temp_file_path, "wb") as temp_file:
         temp_file.write(file_bytes.read())
+        time.sleep(1) 
     return temp_file_path
 
 
@@ -123,13 +123,22 @@ def messages_to_gemini(messages):
             elif content["type"] == "image_url":
                 gemini_message["parts"].append(base64_to_image(content["image_url"]["url"]))
 
-            elif content["type"] in ["video_file", "audio_file"]:
+            elif content["type"] == "video_file":
+                file_path = content["video_file"]
+                if file_path.split(".")[0] not in uploaded_files:
+                    with st.spinner(f"Sending video to Gemini..."):
+                        try:
+                            file = genai.upload_file(path=file_path)
+                            gemini_message["parts"].append(file)
+                        except Exception as e:
+                            st.error(f"An error occurred {e}")
+
+            elif content["type"] == "audio_file":
                 file_name = content['unique_name']
 
                 if file_name not in uploaded_files:
-                    temp_file_path = base64_to_temp_file(content[content["type"]], file_name, "mp4" if content["type"] == "video_file" else "wav")
-
-                    with st.spinner(f"Sending {content['type'].replace('_', ' ')} to Gemini..."):
+                    temp_file_path = base64_to_temp_file(content["audio_file"], file_name, "wav")
+                    with st.spinner(f"Sending audio file to Gemini..."):
                         gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
                     os.remove(temp_file_path)
 
@@ -182,7 +191,10 @@ def add_pdf_file_to_messages():
             }
         )
 
-
+def save_uploaded_video(video_file, file_path):
+    with open(file_path, "wb") as f:
+        f.write(video_file.read())
+        
 ##--- Function for adding media files to session_state messages ---###
 def add_media_files_to_messages():
     if st.session_state.uploaded_file:
@@ -201,15 +213,17 @@ def add_media_files_to_messages():
                 }
             )
         elif file_type == "video/mp4":
-            video_base64 = base64.b64encode(file_content).decode()
-            unique_id = random.randint(1000, 9999)
+            file_name = st.session_state.uploaded_file.name
+            file_path = os.path.join(tempfile.gettempdir(), file_name)
+            save_uploaded_video(st.session_state.uploaded_file, file_path)
+
             st.session_state.messages.append(
                 {
                     "role": "user", 
                     "content": [{
                         "type": "video_file",
-                        "video_file": f"data:{file_type};base64,{video_base64}",
-                        "unique_name": f"temp_{unique_id}"
+                        "video_file": file_path,
+                        "unique_name": file_name
                     }]
                 }
             )
@@ -293,15 +307,15 @@ with st.sidebar:
     api_cols = st.columns(2)
     with api_cols[0]:
         with st.popover("🔐 Groq", use_container_width=True):
-            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key", value=os.getenv("GROQ_API_KEY") , type="password")
+            groq_api_key = st.text_input("Click [here](https://console.groq.com/keys) to get your Groq API key", type="password")
     
     with api_cols[1]:
         with st.popover("🔐 Google", use_container_width=True):
-            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", value=os.getenv("GOOGLE_API_KEY") , type="password")
+            google_api_key = st.text_input("Click [here](https://aistudio.google.com/app/apikey) to get your Google API key", type="password")
  
 ##--- API KEY CHECK ---##
 if (groq_api_key == "" or groq_api_key is None or "gsk" not in groq_api_key) and (google_api_key == "" or google_api_key is None or "AIza" not in google_api_key):
-    st.warning("Please Add an API Key to proceed.")
+    st.info("Please enter an API key in the sidebar to proceed.")
 
 ####--- LLM SIDEBAR ---###
 else:
