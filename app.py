@@ -487,7 +487,7 @@ else:
             valid_content = [
                 content for content in message["content"]
                 if not (
-                    (content["type"] == "text" and content["text"] == "Please Answer the Question asked in the audio.") or
+                    (content["type"] == "text" and content["text"] == "Listen attentively to the audio and take it as user's input.") or
                     content["type"] in ["pdf_file","docx_file"]
                 )
             ]
@@ -582,7 +582,7 @@ else:
                                     "role": "user", 
                                     "content": [{
                                         "type": "text",
-                                        "text": "Please Answer the Question asked in the audio.",
+                                        "text": "Listen attentively to the audio and take it as user's input.",
                                     }]
                                 }
                             )
