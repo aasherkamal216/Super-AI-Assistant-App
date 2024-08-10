@@ -46,4 +46,4 @@ def convert_speech_to_text(audio_bytes):
             text = r.recognize_google(recorded_voice, language="en")
             return text
         except:
-            st.error("Could not recognize speech")
+            st.error("Could not recognize speech", icon="❌")
