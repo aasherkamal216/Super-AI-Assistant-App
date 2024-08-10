@@ -45,7 +45,5 @@ def convert_speech_to_text(audio_bytes):
         try:
             text = r.recognize_google(recorded_voice, language="en")
             return text
-        except sr.UnknownValueError as e:
-            st.error(e)
-        except sr.RequestError as e:
-            st.error("Could not request result from google speech recognition service: {0}".format(e))
+        except:
+            st.error("Could not recognize speech")
