@@ -33,7 +33,7 @@ def set_safety_settings():
 
     return safety_settings
 
-def convert_speech_to_text(audio_bytes):
+def speech_to_text(audio_bytes):
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as recording:
         recording.write(audio_bytes)
         temp_file_path = recording.name
