@@ -525,7 +525,7 @@ else:
             if model_type == "groq":
 
                 if speech_file_added:
-                    question = speech_to_text(audio_bytes)
+                    question = convert_speech_to_text(audio_bytes)
                 else:
                     question = prompt
 
