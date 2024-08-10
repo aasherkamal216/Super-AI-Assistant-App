@@ -7,7 +7,7 @@ import base64
 import docx
 from streamlit_lottie import st_lottie
 import json
-from utils import set_safety_settings, about, extract_all_pages_as_images, speech_to_text
+from utils import set_safety_settings, about, speech_to_text
 import google.generativeai as genai
 import os, random, validators
 import tempfile
