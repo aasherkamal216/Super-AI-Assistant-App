@@ -54,10 +54,6 @@ voices = {
     "Sawara":"hi-IN-SwaraNeural",
 }
 
-
-def speech_recoginition():
-    pass
-
 @st.cache_data
 def load_lottie_file(filepath: str):
     with open(filepath, "r") as f:
@@ -528,7 +524,8 @@ else:
             if model_type == "groq":
 
                 if speech_file_added:
-                    question = speech_to_text(audio_bytes)
+                    with st.spinner("Transcribing your speech..."):
+                        question = speech_to_text(audio_bytes)
                 else:
                     question = prompt
 
@@ -558,6 +555,9 @@ else:
 
                         except Exception as e:
                             st.error(f"An error occurred: {e}", icon="❌")
+                else:
+                    with message_container:
+                        st.error("Couldn't recognize your speech.", icon="❌")
             
             
     ###-------- GEMINI MODELS -------###
