@@ -7,7 +7,7 @@ import base64
 import docx
 from streamlit_lottie import st_lottie
 import json
-from utils import set_safety_settings, about, speech_to_text
+from utils import set_safety_settings, about, convert_speech_to_text
 import google.generativeai as genai
 import os, random, validators
 import tempfile
@@ -529,7 +529,7 @@ else:
                     st.session_state.groq_chat_history.append({"role": "user", "content": prompt})
                 else:
                     with st.spinner("Transcribing..."):
-                        speech_to_text = speech_to_text(audio_bytes)
+                        speech_to_text = convert_speech_to_text(audio_bytes)
                     message_container.chat_message("user", avatar="user.png").markdown(speech_to_text)
                     st.session_state.groq_chat_history.append({"role": "user", "content": speech_to_text})
                     
