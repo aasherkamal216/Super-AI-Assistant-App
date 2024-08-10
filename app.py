@@ -338,7 +338,7 @@ with st.sidebar:
  
 ##--- API KEY CHECK ---##
 if (groq_api_key == "" or groq_api_key is None or "gsk" not in groq_api_key) and (google_api_key == "" or google_api_key is None or "AIza" not in google_api_key):
-    st.warning("Please Add an API Key to proceed.")
+    st.info("Please Add an API Key in the sidebar to proceed.")
 
 ####--- LLM SIDEBAR ---###
 else:
