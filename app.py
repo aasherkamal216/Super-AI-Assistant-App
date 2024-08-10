@@ -528,8 +528,7 @@ else:
                     message_container.chat_message("user", avatar="user.png").markdown(prompt)
                     st.session_state.groq_chat_history.append({"role": "user", "content": prompt})
                 else:
-                    with st.spinner("Transcribing..."):
-                        speech_to_text = convert_speech_to_text(audio_bytes)
+                    speech_to_text = convert_speech_to_text(audio_bytes)
                     message_container.chat_message("user", avatar="user.png").markdown(speech_to_text)
                     st.session_state.groq_chat_history.append({"role": "user", "content": speech_to_text})
                     
@@ -538,11 +537,11 @@ else:
                     try:
                         if groq_llm_type == "Chatbot":
                             final_response = st.write_stream(groq_chatbot(model_params=model_params, api_key=groq_api_key,
-                                        question=prompt or speech_to_text, chat_history=st.session_state.groq_chat_history))
+                                        question=prompt if prompt else speech_to_text, chat_history=st.session_state.groq_chat_history))
 
                         elif groq_llm_type == "Agent":
                             final_response = create_groq_agent(model_params=model_params, api_key=groq_api_key,
-                                                                            question=prompt or speech_to_text,
+                                                                            question=prompt if prompt else speech_to_text,
                                                                             tools=get_tools(tools),
                                                                             chat_history=st.session_state.groq_chat_history,)
                             
