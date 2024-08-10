@@ -244,9 +244,6 @@ def add_media_files_to_messages():
         elif file_type == "video/mp4":
             video_base64 = base64.b64encode(file_content).decode()
             unique_id = random.randint(1000, 9999)
-            # file_name = st.session_state.uploaded_file.name
-            # file_path = os.path.join(tempfile.gettempdir(), file_name)
-            # save_uploaded_video(st.session_state.uploaded_file, file_path)
 
             st.session_state.messages.append(
                 {
@@ -426,7 +423,7 @@ else:
     with chat_col1:
         ###--- Audio Recording ---###
         audio_bytes = audio_recorder("Speak",
-                                     pause_threshold=5,
+                                     pause_threshold=3,
                                      neutral_color="#f5f8fc",
                                      recording_color="#f81f6f",
                                      icon_name="microphone-lines",
@@ -531,7 +528,8 @@ else:
                     message_container.chat_message("user", avatar="user.png").markdown(prompt)
                     st.session_state.groq_chat_history.append({"role": "user", "content": prompt})
                 else:
-                    speech_to_text = speech_to_text(audio_bytes)
+                    with st.spinner("Transcribing...")
+                        speech_to_text = speech_to_text(audio_bytes)
                     message_container.chat_message("user", avatar="user.png").markdown(speech_to_text)
                     st.session_state.groq_chat_history.append({"role": "user", "content": speech_to_text})
                     
@@ -540,11 +538,11 @@ else:
                     try:
                         if groq_llm_type == "Chatbot":
                             final_response = st.write_stream(groq_chatbot(model_params=model_params, api_key=groq_api_key,
-                                        question=prompt, chat_history=st.session_state.groq_chat_history))
+                                        question=prompt or speech_to_text, chat_history=st.session_state.groq_chat_history))
 
                         elif groq_llm_type == "Agent":
                             final_response = create_groq_agent(model_params=model_params, api_key=groq_api_key,
-                                                                            question=prompt,
+                                                                            question=prompt or speech_to_text,
                                                                             tools=get_tools(tools),
                                                                             chat_history=st.session_state.groq_chat_history,)
                             
