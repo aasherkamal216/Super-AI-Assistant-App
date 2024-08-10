@@ -215,11 +215,6 @@ def add_pdf_docx_file_to_messages():
                 }
             )
 
-
-def save_uploaded_video(video_file, file_path):
-    with open(file_path, "wb") as f:
-        f.write(video_file.read())
-
 ##--- Function for adding media files to session_state messages ---###
 def add_media_files_to_messages():
     if st.session_state.uploaded_file:
