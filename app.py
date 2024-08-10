@@ -146,7 +146,7 @@ def messages_to_gemini(messages):
                         file = genai.upload_file(path=temp_file_path)
                         
                         while file.state.name == "PROCESSING":
-                            st.write('Processing your request, please stand by.')
+                            st.write(':green[One moment, please.]')
                             time.sleep(10)
                             file = genai.get_file(file.name)
                             
