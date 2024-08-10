@@ -457,11 +457,8 @@ else:
 
     ###-- Handle speech input --###
     speech_file_added = False
-    if "prev_speech_hash" not in st.session_state:
-        st.session_state.prev_speech_hash = None
 
-    if audio_bytes and st.session_state.prev_speech_hash != hash(audio_bytes):
-        st.session_state.prev_speech_hash = hash(audio_bytes)
+    if audio_bytes:
         if model_type == "google":
             speech_base64 = base64.b64encode(audio_bytes).decode()
             unique_id = random.randint(1000, 9999)
@@ -487,7 +484,7 @@ else:
             valid_content = [
                 content for content in message["content"]
                 if not (
-                    (content["type"] == "text" and content["text"] == "Listen attentively to the audio and take it as user's input.") or
+                    (content["type"] == "text" and content["text"] == "Listen attentively to the audio and answer the question being asked.") or
                     content["type"] in ["pdf_file","docx_file"]
                 )
             ]
@@ -582,7 +579,7 @@ else:
                                     "role": "user", 
                                     "content": [{
                                         "type": "text",
-                                        "text": "Listen attentively to the audio and take it as user's input.",
+                                        "text": "Listen attentively to the audio and answer the question being asked.",
                                     }]
                                 }
                             )
