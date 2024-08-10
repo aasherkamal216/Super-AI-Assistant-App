@@ -454,12 +454,15 @@ else:
 
     ###-- Handle speech input --###
     speech_file_added = False
+    if "prev_speech_hash" not in st.session_state:
+        st.session_state.prev_speech_hash = None
 
-    if audio_bytes:
+    if audio_bytes and st.session_state.prev_speech_hash != hash(audio_bytes):
+        st.session_state.prev_speech_hash = hash(audio_bytes)
         if model_type == "google":
             speech_base64 = base64.b64encode(audio_bytes).decode()
             unique_id = random.randint(1000, 9999)
-    
+
             st.session_state.messages.append(
                 {
                     "role": "user",
@@ -525,7 +528,7 @@ else:
             if model_type == "groq":
 
                 if speech_file_added:
-                    question = convert_speech_to_text(audio_bytes)
+                    question = speech_to_text(audio_bytes)
                 else:
                     question = prompt
 
