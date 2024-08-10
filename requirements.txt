@@ -16,7 +16,7 @@ wikipedia
 duckduckgo-search
 langchainhub
 validators
-docx
+python-docx==1.1.2
 SpeechRecognition
 youtube-transcript-api
 pytube
