@@ -35,8 +35,11 @@ def visualize_display_page(selection_dict):
         st.rerun()
 
 def about():
-    about_text = """Welcome to the Super GPT Assistant App. This app is created by Aasher Kamal.
-"""
+    about_text = """This AI-powered Streamlit app allows users to interact with various LLMs through
+    multiple media inputs, including text, images, audio, voice, video, PDF, Docx, and links.
+    Users can choose between a Chatbot, Agents, or a summarizer model, customize voice responses,
+    and reset the conversation as needed. The app processes and responds to queries in real-time,
+    offering an intuitive and versatile experience."""
     return about_text
 
 def temperature_slider():
