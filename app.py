@@ -1,8 +1,6 @@
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 from groq_models import create_groq_agent, groq_chatbot, get_tools, summarizer_model
-from langchain_community.document_loaders import Docx2txtLoader
-from langchain_community.document_loaders import TextLoader
 from PIL import Image
 from io import BytesIO
 import base64
