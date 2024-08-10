@@ -146,7 +146,7 @@ def messages_to_gemini(messages):
                         file = genai.upload_file(path=temp_file_path)
                         
                         while file.state.name == "PROCESSING":
-                            st.write('.')
+                            st.write('Processing your request, please stand by.')
                             time.sleep(10)
                             file = genai.get_file(file.name)
                             
@@ -155,7 +155,6 @@ def messages_to_gemini(messages):
                             
                         file = genai.get_file(name=file.name)
                         gemini_message["parts"].append(file)
-                        st.write(f"Retrieved file '{file.display_name}' as: {file.uri}")
                     os.remove(temp_file_path)
 
             elif content["type"] == "pdf_file":
