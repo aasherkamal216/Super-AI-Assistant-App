@@ -43,8 +43,7 @@ def speech_to_text(audio_bytes):
         recorded_voice = r.record(source)
 
         try:
-            with st.spinner("Transcribing the speech...")
-                text = r.recognize_google(recorded_voice, language="en")
+            text = r.recognize_google(recorded_voice, language="en")
             return text
         except sr.UnknownValueError as e:
             st.error(e)
