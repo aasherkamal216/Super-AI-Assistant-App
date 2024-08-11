@@ -577,10 +577,13 @@ else:
                 elif not validators.url(url):
                     st.error("Please enter a valid URL")
                 else:
-                    with st.spinner("Summarizing..."):
-                        final_response = summarizer_model(model_params=model_params, api_key=groq_api_key, url=url)
-                    st.markdown(final_response)
-                st.session_state.groq_chat_history.append({"role": "assistant", "content": final_response})
+                    try:
+                        with st.spinner("Summarizing..."):
+                            final_response = summarizer_model(model_params=model_params, api_key=groq_api_key, url=url)
+                        st.markdown(final_response)
+                        st.session_state.groq_chat_history.append({"role": "assistant", "content": final_response})
+                    except Exception as e:
+                        st.error(f"An error occurred: {e}")
 
 ###----- User Question -----###
     else:
