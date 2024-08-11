@@ -10,6 +10,7 @@ import json
 from utils import set_safety_settings, about, speech_to_text
 import google.generativeai as genai
 import os, random, validators
+import time
 import tempfile
 import asyncio
 import edge_tts
@@ -140,7 +141,18 @@ def messages_to_gemini(messages):
                     temp_file_path = base64_to_temp_file(content[content_type], file_name, "mp4" if content_type == "video_file" else "wav")
 
                     with st.spinner(f"Sending {content_type.replace('_', ' ')} to Gemini..."):
-                        gemini_message["parts"].append(genai.upload_file(path=temp_file_path))
+                        file = genai.upload_file(path=temp_file_path)
+
+                        while file.state.name == "PROCESSING":
+                            st.write(':green[One moment, please.]')
+                            time.sleep(10)
+                            file = genai.get_file(file.name)
+
+                        if file.state.name == "FAILED":
+                            raise ValueError(file.state.name)
+
+                        file = genai.get_file(name=file.name)
+                        gemini_message["parts"].append(file)
                     os.remove(temp_file_path)
 
             elif content_type == "pdf_file":
