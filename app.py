@@ -273,8 +273,8 @@ def reset_conversation():
         if key in st.session_state:
             st.session_state.pop(key, None)
 
-    for file in genai.list_files():
-        genai.delete_file(file.name)
+    # for file in genai.list_files():
+    #     genai.delete_file(file.name)
 
 
 ##--- FUNCTION TO STREAM GEMINI RESPONSE ---##
