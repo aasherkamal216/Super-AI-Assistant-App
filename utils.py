@@ -1,6 +1,4 @@
 import streamlit as st
-import speech_recognition as sr
-import tempfile
 
 def about():
     about_text = """This AI-powered Streamlit app allows users to interact with various LLMs through
@@ -32,18 +30,3 @@ def set_safety_settings():
 ]
 
     return safety_settings
-
-def speech_to_text(audio_bytes):
-    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as recording:
-        recording.write(audio_bytes)
-        temp_file_path = recording.name
-        
-    r = sr.Recognizer()
-    with sr.AudioFile(temp_file_path) as source:
-        recorded_voice = r.record(source)
-
-        try:
-            text = r.recognize_google(recorded_voice, language="en")
-            return text
-        except:
-            return None
