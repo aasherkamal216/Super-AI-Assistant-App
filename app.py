@@ -457,7 +457,6 @@ else:
                         key="uploaded_file",
                         on_change=add_media_files_to_messages,
                     )
-
             with media_cols[1]:                    
                 with st.popover("📷 Camera", use_container_width=True):
                     activate_camera = st.checkbox("Activate camera")
@@ -598,3 +597,4 @@ else:
 ###----- User Question -----###
     else:
         process_user_input(message_container, st.session_state.transcribed_text)
+        st.session_state.speech_file_added = False
