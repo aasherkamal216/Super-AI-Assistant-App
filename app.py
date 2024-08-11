@@ -7,7 +7,8 @@ import base64
 import docx
 from streamlit_lottie import st_lottie
 import json
-from utils import set_safety_settings, about, speech_to_text
+from utils import set_safety_settings, about
+from streamlit_mic_recorder import speech_to_text
 import google.generativeai as genai
 import os, random, validators
 import time
@@ -331,11 +332,7 @@ def is_valid_content(content):
         content["type"] in ["pdf_file", "docx_file"]
     )
 
-###---SPEECH HANDLING---###
-def handle_speech_input(audio_bytes):
-    with st.spinner("Transcribing your speech..."):
-        return speech_to_text(audio_bytes)
-    
+
 ###---CHAT HISTORY UPDATE---###
 def update_chat_history(role, content, history):
     history.append({"role": role, "content": content})
@@ -353,14 +350,14 @@ def handle_groq_response(model_params, api_key, question, chat_history, llm_type
         return response
 
 ###---- MAIN FUNCTION FOR ALL MODELS CONVERSATION HANDLING---###
-def process_user_input(message_container):
+def process_user_input(message_container, trasncribed_text):
     prompt = st.chat_input("Type your question", key="question") or speech_file_added
 
     if not prompt:
         return
 
     if model_type == "groq":
-        question = handle_speech_input(audio_bytes) if speech_file_added else prompt
+        question = trasncribed_text if speech_file_added else prompt
 
         if question is None:
             message_container.error("Couldn't recognize your speech.", icon="❌")
@@ -491,25 +488,53 @@ else:
                                        options=["Wikipedia", "ArXiv", "DuckDuckGo Search"])
                 
 
+###--- Session state variables ---###
+    session_keys = ["messages", "uploaded_files", "groq_chat_history"]
+    for key in session_keys:
+        if key not in st.session_state:
+            st.session_state[key] = []
+
 ######-----  Main Interface -----#######
     chat_col1, chat_col2 = st.columns([1,4])
 
     with chat_col1:
         ###--- Audio Recording ---###
-        audio_bytes = audio_recorder("Speak",
-                                     pause_threshold=3,
-                                     neutral_color="#f5f8fc",
-                                     recording_color="#f81f6f",
-                                     icon_name="microphone-lines",
-                                     icon_size="3x")
+        speech_file_added = False
+        if model_type == "google":
+            audio_bytes = audio_recorder("Speak",
+                                        pause_threshold=3,
+                                        neutral_color="#f5f8fc",
+                                        recording_color="#f81f6f",
+                                        icon_name="microphone-lines",
+                                        icon_size="3x")
+                
+            if "prev_speech_hash" not in st.session_state:
+                st.session_state.prev_speech_hash = None
 
-        ###--- Reset Conversation ---###
-        st.button(
-                "🗑 Reset",
-                use_container_width=True,
-                on_click=reset_conversation,
-                help="If clicked, conversation will be reset.",
-            )
+            if audio_bytes and st.session_state.prev_speech_hash != hash(audio_bytes):
+                st.session_state.prev_speech_hash = hash(audio_bytes)
+
+                speech_base64 = base64.b64encode(audio_bytes).decode()
+                unique_id = random.randint(1000, 9999)
+
+                st.session_state.messages.append(
+                    {
+                        "role": "user",
+                        "content": [{
+                            "type": "speech_input",
+                            "speech_input": f"data:audio/wav;base64,{speech_base64}",
+                            "unique_name": f"temp_{unique_id}"
+                        }]
+                    }
+                )
+                speech_file_added = True
+
+        else:
+
+            trasncribed_text = speech_to_text(language="en", just_once=True, key="STT", use_container_width=True)
+        
+            if trasncribed_text: speech_file_added = True
+                
     ###--- Session state variables ---###
         if "pdf_docx_uploaded" not in st.session_state:
             st.session_state.pdf_docx_uploaded = None
@@ -519,34 +544,6 @@ else:
                 file_name = st.session_state.pdf_docx_uploaded.name
                 st.info(f"Your file :green['{file_name}'] has been uploaded!")
 
-
-    session_keys = ["messages", "uploaded_files", "groq_chat_history"]
-    for key in session_keys:
-        if key not in st.session_state:
-            st.session_state[key] = []
-
-    ###-- Handle speech input --###
-    speech_file_added = False
-    if "prev_speech_hash" not in st.session_state:
-        st.session_state.prev_speech_hash = None
-
-    if audio_bytes and st.session_state.prev_speech_hash != hash(audio_bytes):
-        st.session_state.prev_speech_hash = hash(audio_bytes)
-        if model_type == "google":
-            speech_base64 = base64.b64encode(audio_bytes).decode()
-            unique_id = random.randint(1000, 9999)
-
-            st.session_state.messages.append(
-                {
-                    "role": "user",
-                    "content": [{
-                        "type": "speech_input",
-                        "speech_input": f"data:audio/wav;base64,{speech_base64}",
-                        "unique_name": f"temp_{unique_id}"
-                    }]
-                }
-            )
-        speech_file_added = True
 
     ####---DISPLAY CONVERSATION---###
     with chat_col2:
@@ -587,4 +584,4 @@ else:
 
 ###----- User Question -----###
     else:
-        process_user_input(message_container)
+        process_user_input(message_container, trasncribed_text)
