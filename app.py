@@ -351,13 +351,13 @@ def handle_groq_response(model_params, api_key, question, chat_history, llm_type
 
 ###---- MAIN FUNCTION FOR ALL MODELS CONVERSATION HANDLING---###
 def process_user_input(message_container, trasncribed_text):
-    prompt = st.chat_input("Type your question", key="question") or speech_file_added
+    prompt = st.chat_input("Type your question", key="question") or st.session_state.speech_file_added
 
     if not prompt:
         return
 
     if model_type == "groq":
-        question = trasncribed_text if speech_file_added else prompt
+        question = trasncribed_text if st.session_state.speech_file_added else prompt
 
         if question is None:
             message_container.error("Couldn't recognize your speech.", icon="❌")
@@ -380,7 +380,7 @@ def process_user_input(message_container, trasncribed_text):
                 st.error(f"An error occurred: {e}", icon="❌")
 
     else:  # Gemini models
-        if not speech_file_added:
+        if not st.session_state.speech_file_added:
             message_container.chat_message("user", avatar="user.png").markdown(prompt)
             content = [{"type": "text", "text": prompt}]
         else:
@@ -493,16 +493,18 @@ else:
     for key in session_keys:
         if key not in st.session_state:
             st.session_state[key] = []
-            
+
     if "transcribed_text" not in st.session_state:
         st.session_state.transcribed_text = None
 
+    if "speech_file_added" not in st.session_state:
+        st.session_state.speech_file_added = False
+        
 ######-----  Main Interface -----#######
     chat_col1, chat_col2 = st.columns([1,4])
 
     with chat_col1:
         ###--- Audio Recording ---###
-        speech_file_added = False
         if model_type == "google":
             audio_bytes = audio_recorder("Speak",
                                         pause_threshold=3,
@@ -530,14 +532,14 @@ else:
                         }]
                     }
                 )
-                speech_file_added = True
+                st.session_state.speech_file_added = True
 
         else:
 
-            st.session_state.transcribed_text = speech_to_text(language="en", just_once=True, key="STT", use_container_width=True)
+            st.session_state.transcribed_text = speech_to_text(language="en", just_once=True, use_container_width=True)
         
             if st.session_state.transcribed_text:
-                speech_file_added = True
+                st.session_state.speech_file_added = True
                 
     ###--- Session state variables ---###
         if "pdf_docx_uploaded" not in st.session_state:
