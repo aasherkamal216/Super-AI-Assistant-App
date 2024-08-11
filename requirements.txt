@@ -20,3 +20,4 @@ python-docx==1.1.2
 SpeechRecognition
 youtube-transcript-api
 pytube==15.0.0
+streamlit-mic-recorder
