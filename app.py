@@ -493,6 +493,9 @@ else:
     for key in session_keys:
         if key not in st.session_state:
             st.session_state[key] = []
+            
+    if "transcribed_text" not in st.session_state:
+        st.session_state.transcribed_text = None
 
 ######-----  Main Interface -----#######
     chat_col1, chat_col2 = st.columns([1,4])
@@ -531,9 +534,10 @@ else:
 
         else:
 
-            trasncribed_text = speech_to_text(language="en", just_once=True, key="STT", use_container_width=True)
+            st.session_state.transcribed_text = speech_to_text(language="en", just_once=True, key="STT", use_container_width=True)
         
-            if trasncribed_text: speech_file_added = True
+            if st.session_state.transcribed_text:
+                speech_file_added = True
                 
     ###--- Session state variables ---###
         if "pdf_docx_uploaded" not in st.session_state:
@@ -584,4 +588,4 @@ else:
 
 ###----- User Question -----###
     else:
-        process_user_input(message_container, trasncribed_text)
+        process_user_input(message_container, st.session_state.transcribed_text)
