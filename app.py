@@ -539,8 +539,16 @@ else:
             st.session_state.transcribed_text = speech_to_text(language="en", just_once=True, use_container_width=True)
         
             if st.session_state.transcribed_text:
+                st.write(st.session_state.transcribed_text)
                 st.session_state.speech_file_added = True
-                
+
+        ###--- Reset Conversation ---###
+        st.button(
+                "🗑 Reset",
+                use_container_width=True,
+                on_click=reset_conversation,
+                help="If clicked, conversation will be reset.",
+            )
     ###--- Session state variables ---###
         if "pdf_docx_uploaded" not in st.session_state:
             st.session_state.pdf_docx_uploaded = None
