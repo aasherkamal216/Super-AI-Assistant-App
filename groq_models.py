@@ -109,19 +109,23 @@ def summarizer_model(model_params, api_key, url):
             temperature=model_params["temperature"],
             max_tokens=model_params['max_tokens']
             )
-    
-    if "youtube.com" in url:
-        loader = YoutubeLoader.from_youtube_url(url, add_video_info=True)
-    else:
-        loader = WebBaseLoader(web_path=url)
+    try:
+        if "youtube.com" in url or "youtu.be" in url:
+            video_id = YoutubeLoader.extract_video_id(url)
 
-    data = loader.load()
+            loader = YoutubeLoader.from_youtube_url("https://www.youtube.com/watch?v=" + video_id, add_video_info=True)
+        else:
+            loader = WebBaseLoader(web_path=url)
 
-    prompt_template = """Provide a summary of the following content in proper markdown:
-    Content:\n{text}"""
+        data = loader.load()
 
-    prompt = PromptTemplate(input_variables=["text"], template=prompt_template)
+        prompt_template = """Provide a summary of the following content in proper markdown:
+        Content:\n{text}"""
 
-    chain = load_summarize_chain(llm=llm, chain_type="stuff", prompt=prompt)
-    output = chain.run(data)
-    return output
+        prompt = PromptTemplate(input_variables=["text"], template=prompt_template)
+
+        chain = load_summarize_chain(llm=llm, chain_type="stuff", prompt=prompt)
+        output = chain.run(data)
+        return output
+    except Exception:
+        st.error(f"An error occurred:An error occurred: Could not retrieve a transcript for the video", icon="❌")
