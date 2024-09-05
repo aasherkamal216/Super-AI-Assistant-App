@@ -113,7 +113,11 @@ def summarizer_model(model_params, api_key, url):
         if "youtube.com" in url or "youtu.be" in url:
             video_id = YoutubeLoader.extract_video_id(url)
 
-            loader = YoutubeLoader.from_youtube_url("https://www.youtube.com/watch?v=" + video_id, add_video_info=True)
+            loader = YoutubeLoader.from_youtube_url("https://www.youtube.com/watch?v=" + video_id,
+                                                    add_video_info=False,
+                                                    language=["en", "hi"],
+                                                    translation="en",
+                                                    continue_on_failure=True) 
         else:
             loader = WebBaseLoader(web_path=url)
 
