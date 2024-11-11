@@ -1,4 +1,4 @@
-# 🚀Super AI Assistant App
+# 🚀Super AI Assistant
 
 An interactive AI-powered assistant built with Streamlit! Chat with advanced models, get voice responses, and upload all kinds of media to unlock the potential of AI in real time. Super AI Assistant brings Google Gemini and Groq models directly to you with a range of features and an easy-to-use interface.
 
