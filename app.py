@@ -17,7 +17,7 @@ import asyncio
 import edge_tts
 
 st.set_page_config(
-    page_title="Super GPT",
+    page_title="Super AI Assistant",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="auto",
@@ -363,10 +363,10 @@ def process_user_input(message_container, trasncribed_text):
             message_container.error("Couldn't recognize your speech.", icon="❌")
             return
 
-        message_container.chat_message("user", avatar="user.png").markdown(question)
+        message_container.chat_message("user", avatar="assets/user.png").markdown(question)
         update_chat_history("user", question, st.session_state.groq_chat_history)
 
-        with message_container.chat_message("assistant", avatar="assistant.png"):
+        with message_container.chat_message("assistant", avatar="assets/assistant.png"):
             try:
                 final_response = handle_groq_response(model_params, groq_api_key, question, 
                                                       st.session_state.groq_chat_history, 
@@ -381,14 +381,14 @@ def process_user_input(message_container, trasncribed_text):
 
     else:  # Gemini models
         if not st.session_state.speech_file_added:
-            message_container.chat_message("user", avatar="user.png").markdown(prompt)
+            message_container.chat_message("user", avatar="assets/user.png").markdown(prompt)
             content = [{"type": "text", "text": prompt}]
         else:
             content = [{"type": "text", "text": "Listen attentively to the audio. If there is a question in the audio, answer it professionally."}]
 
         update_chat_history("user", content, st.session_state.messages)
 
-        with message_container.chat_message("assistant", avatar="assistant.png"):
+        with message_container.chat_message("assistant", avatar="assets/assistant.png"):
             try:
                 final_response = st.write_stream(stream_gemini_response(model_params=model_params, api_key=google_api_key))
 
@@ -403,7 +403,7 @@ def process_user_input(message_container, trasncribed_text):
 
 ##--- API KEYS ---##
 with st.sidebar:
-    st.logo("logo.png")
+    st.logo(image="assets/logo.png")
     api_cols = st.columns(2)
     with api_cols[0]:
         with st.popover("🔐 Groq", use_container_width=True):
@@ -424,7 +424,7 @@ else:
         columns = st.columns(2)
         # animation
         with columns[0]:
-            lottie_animation = load_lottie_file("animation.json")
+            lottie_animation = load_lottie_file("assets/animation.json")
             if lottie_animation:
                 st_lottie(lottie_animation, height=100, width=100, quality="high", key="lottie_anim")
 
@@ -565,7 +565,7 @@ else:
                 valid_contents = [content for content in message["content"] if is_valid_content(content)]
 
                 if valid_contents:
-                    avatar = "assistant.png" if message["role"] == "assistant" else "user.png"
+                    avatar = "assets/assistant.png" if message["role"] == "assistant" else "assets/user.png"
 
                     with message_container.chat_message(message["role"], avatar=avatar):
                         for content in valid_contents:
@@ -573,14 +573,14 @@ else:
                             
         if model_type == "groq":
             for msg in st.session_state.groq_chat_history:
-                avatar = "assistant.png" if msg["role"] == "assistant" else "user.png"
+                avatar = "assets/assistant.png" if msg["role"] == "assistant" else "assets/user.png"
                 with message_container.chat_message(msg["role"], avatar=avatar):
                     st.markdown(msg['content'])
 
  ###---- Summarizer model------###
     if model_type == "groq" and groq_llm_type == "Summarizer":
         if st.session_state.summarize:
-            with message_container.chat_message("assistant", avatar="assistant.png"):
+            with message_container.chat_message("assistant", avatar="assets/assistant.png"):
                 if not url.strip():
                     st.error("Please enter a URL")
                 elif not validators.url(url):
